@@ -1,10 +1,17 @@
 import { NextRequest } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Result from "@/lib/models/Result";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    const user = await getUserFromRequest(request);
+    if (user) {
+      body.userId = user._id.toString();
+      body.studentName = body.studentName || user.displayName;
+    }
 
     if (process.env.MONGODB_URI) {
       try {
@@ -31,6 +38,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const studentName = searchParams.get("studentName");
     const grade = searchParams.get("grade");
+    const userId = searchParams.get("userId");
 
     if (!process.env.MONGODB_URI) {
       return Response.json({ results: [] });
@@ -42,6 +50,7 @@ export async function GET(request: NextRequest) {
       const query: Record<string, unknown> = {};
       if (studentName) query.studentName = studentName;
       if (grade) query.grade = Number(grade);
+      if (userId) query.userId = userId;
 
       const results = await Result.find(query)
         .sort({ completedAt: -1 })

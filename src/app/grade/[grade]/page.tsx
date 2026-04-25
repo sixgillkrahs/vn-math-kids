@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Loader2, ArrowLeft, Sparkles, BookOpen, Play } from "lucide-react";
 import Link from "next/link";
 import ExerciseView from "@/components/ExerciseView";
+import { useAuth } from "@/components/AuthProvider";
 import type { GeneratedExercise } from "@/lib/mathGenerator";
 
 const gradeInfo: Record<
@@ -28,6 +29,7 @@ export default function GradePage({
   const resolvedParams = use(params);
   const gradeNum = Number(resolvedParams.grade);
   const info = gradeInfo[gradeNum];
+  const { user, token } = useAuth();
 
   const [exercises, setExercises] = useState<GeneratedExercise[]>([]);
   const [loading, setLoading] = useState(false);
@@ -285,7 +287,12 @@ export default function GradePage({
           {info.emoji} {info.name} {info.mascot}
         </h1>
       </div>
-      <ExerciseView exercises={exercises} grade={gradeNum} />
+      <ExerciseView
+        exercises={exercises}
+        grade={gradeNum}
+        authToken={token}
+        studentName={user?.displayName}
+      />
     </div>
   );
 }

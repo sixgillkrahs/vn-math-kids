@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const nunito = Nunito({
   subsets: ["latin", "vietnamese"],
@@ -25,11 +26,13 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${nunito.className} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <footer className="bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 py-4 text-center text-sm font-semibold text-white">
-          <p>🧮 Toán Vui Cấp 1 © 2025 - Học mà vui, vui mà học! 📚</p>
-        </footer>
+        <AuthProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <footer className="bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 py-4 text-center text-sm font-semibold text-white">
+            <p>🧮 Toán Vui Cấp 1 © 2025 - Học mà vui, vui mà học! 📚</p>
+          </footer>
+        </AuthProvider>
       </body>
     </html>
   );
