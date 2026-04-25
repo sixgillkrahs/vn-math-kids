@@ -2,7 +2,7 @@
 
 import { useState, useCallback, use } from "react";
 import { motion } from "framer-motion";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Sparkles, BookOpen, Play } from "lucide-react";
 import Link from "next/link";
 import ExerciseView from "@/components/ExerciseView";
 import type { GeneratedExercise } from "@/lib/mathGenerator";
@@ -18,6 +18,8 @@ const gradeInfo: Record<
   5: { name: "Lớp 5", emoji: "🏆", color: "from-purple-400 to-violet-500", mascot: "🦁" },
 };
 
+type ExerciseMode = "select" | "new" | "bank";
+
 export default function GradePage({
   params,
 }: {
@@ -31,8 +33,11 @@ export default function GradePage({
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
   const [count, setCount] = useState(10);
+  const [mode, setMode] = useState<ExerciseMode>("select");
+  const [bankError, setBankError] = useState<string | null>(null);
+  const [bankTotal, setBankTotal] = useState<number | null>(null);
 
-  const fetchExercises = useCallback(async () => {
+  const fetchNewExercises = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/exercises/generate", {
@@ -46,6 +51,69 @@ export default function GradePage({
       setLoading(false);
     }
   }, [gradeNum, count]);
+
+  const fetchBankExercises = useCallback(async () => {
+    setLoading(true);
+    setBankError(null);
+    try {
+      const res = await fetch(
+        `/api/exercises/bank?grade=${gradeNum}&count=${count}`
+      );
+      const data = await res.json();
+      if (data.exercises && data.exercises.length > 0) {
+        const mapped: GeneratedExercise[] = data.exercises.map(
+          (ex: {
+            question: string;
+            answer: string;
+            options?: string[];
+            topic?: string;
+            explanation?: string;
+          }) => ({
+            question: ex.question,
+            answer: ex.answer,
+            options:
+              ex.options && ex.options.length >= 4
+                ? ex.options
+                : generateOptionsFromAnswer(ex.answer),
+            topic: ex.topic || "Bài tập",
+            explanation: ex.explanation || "",
+          })
+        );
+        setExercises(mapped);
+      } else {
+        setBankError(
+          data.message || "Chưa có bài tập trong ngân hàng đề cho lớp này"
+        );
+        setStarted(false);
+      }
+    } catch {
+      setBankError("Không thể tải bài tập từ ngân hàng đề");
+      setStarted(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [gradeNum, count]);
+
+  const checkBankTotal = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/exercises/bank?grade=${gradeNum}&count=1`
+      );
+      const data = await res.json();
+      setBankTotal(data.total ?? 0);
+    } catch {
+      setBankTotal(0);
+    }
+  }, [gradeNum]);
+
+  const handleStart = (selectedMode: "new" | "bank") => {
+    setStarted(true);
+    if (selectedMode === "new") {
+      fetchNewExercises();
+    } else {
+      fetchBankExercises();
+    }
+  };
 
   if (!info) {
     return (
@@ -86,7 +154,7 @@ export default function GradePage({
           <h1 className="mb-2 text-4xl font-black">
             {info.emoji} {info.name}
           </h1>
-          <p className="mb-8 text-lg text-white/90">
+          <p className="mb-6 text-lg text-white/90">
             Sẵn sàng làm bài tập toán chưa nào? 🎉
           </p>
 
@@ -111,12 +179,77 @@ export default function GradePage({
             </div>
           </div>
 
-          <button
-            onClick={() => { setStarted(true); fetchExercises(); }}
-            className="rounded-full bg-white px-8 py-4 text-xl font-black text-indigo-600 shadow-xl transition hover:scale-105 hover:shadow-2xl"
-          >
-            🚀 Bắt đầu làm bài!
-          </button>
+          {mode === "select" ? (
+            <div className="space-y-3">
+              <p className="mb-3 text-sm font-bold text-white/80">
+                Chọn nguồn bài tập:
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <button
+                  onClick={() => handleStart("new")}
+                  className="flex items-center justify-center gap-2 rounded-full bg-white px-6 py-4 text-lg font-black text-indigo-600 shadow-xl transition hover:scale-105 hover:shadow-2xl"
+                >
+                  <Sparkles size={22} />
+                  Tạo câu hỏi mới
+                </button>
+                <button
+                  onClick={() => {
+                    setMode("bank");
+                    checkBankTotal();
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-full bg-white/20 px-6 py-4 text-lg font-black text-white shadow-xl transition hover:scale-105 hover:bg-white/30 hover:shadow-2xl"
+                >
+                  <BookOpen size={22} />
+                  Ngân hàng câu hỏi
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                <BookOpen className="mx-auto mb-2" size={32} />
+                <p className="text-sm font-bold">Ngân hàng câu hỏi</p>
+                {bankTotal !== null && (
+                  <p className="mt-1 text-xs text-white/70">
+                    {bankTotal > 0
+                      ? `Có ${bankTotal} bài tập sẵn cho ${info.name}`
+                      : `Chưa có bài tập nào cho ${info.name}. Hãy quét bài tập trước!`}
+                  </p>
+                )}
+              </div>
+
+              {bankError && (
+                <p className="text-sm font-semibold text-yellow-200">
+                  {bankError}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <button
+                  onClick={() => handleStart("bank")}
+                  disabled={bankTotal === 0}
+                  className={`flex items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-black shadow-xl transition ${
+                    bankTotal === 0
+                      ? "bg-white/30 text-white/50 cursor-not-allowed"
+                      : "bg-white text-indigo-600 hover:scale-105 hover:shadow-2xl"
+                  }`}
+                >
+                  <Play size={22} />
+                  Bắt đầu làm bài
+                </button>
+                <button
+                  onClick={() => {
+                    setMode("select");
+                    setBankError(null);
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-full bg-white/20 px-6 py-4 text-lg font-black text-white shadow-xl transition hover:scale-105 hover:bg-white/30"
+                >
+                  <ArrowLeft size={18} />
+                  Quay lại
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     );
@@ -152,14 +285,30 @@ export default function GradePage({
           {info.emoji} {info.name} {info.mascot}
         </h1>
       </div>
-
-      {exercises.length > 0 ? (
-        <ExerciseView exercises={exercises} grade={gradeNum} />
-      ) : (
-        <div className="text-center">
-          <p className="text-lg text-gray-500">Không có bài tập</p>
-        </div>
-      )}
+      <ExerciseView exercises={exercises} grade={gradeNum} />
     </div>
   );
+}
+
+function generateOptionsFromAnswer(answer: string): string[] {
+  const num = parseFloat(answer);
+  if (!isNaN(num)) {
+    const opts = new Set<string>([answer]);
+    while (opts.size < 4) {
+      const delta = Math.floor(Math.random() * 5) + 1;
+      const sign = Math.random() > 0.5 ? 1 : -1;
+      opts.add(String(num + delta * sign));
+    }
+    return shuffleArr([...opts]);
+  }
+  return shuffleArr([answer, "?", "Không xác định", "Khác"]);
+}
+
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
