@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
 
     const bytes = await file.arrayBuffer();
     const base64 = Buffer.from(bytes).toString("base64");
@@ -41,31 +41,62 @@ Example: [{"question": "5 + 3 = ?", "answer": "8", "topic": "Phép cộng", "exp
 
 Extract math exercises from this image for grade ${grade || "1-5"} students in Vietnam.`;
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64,
-          mimeType,
-        },
-      },
-    ]);
+    let lastError: unknown;
+    for (const modelName of models) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64,
+              mimeType,
+            },
+          },
+        ]);
 
-    const content = result.response.text();
-    let exercises;
-    try {
-      const cleaned = content.replace(/```json\n?|\n?```/g, "").trim();
-      exercises = JSON.parse(cleaned);
-    } catch {
-      exercises = getSampleScannedExercises(Number(grade) || 1);
+        const content = result.response.text();
+        let exercises;
+        try {
+          const cleaned = content.replace(/```json\n?|\n?```/g, "").trim();
+          exercises = JSON.parse(cleaned);
+        } catch {
+          exercises = getSampleScannedExercises(Number(grade) || 1);
+        }
+
+        return Response.json({ exercises });
+      } catch (err) {
+        lastError = err;
+        const isRetryable =
+          err instanceof Error &&
+          (err.message.includes("429") || err.message.includes("404"));
+        if (isRetryable) {
+          continue;
+        }
+        break;
+      }
     }
 
-    return Response.json({ exercises });
+    console.error("Scan error after retries:", lastError);
+    const errorMessage =
+      lastError instanceof Error && lastError.message.includes("429")
+        ? "API đang bận, vui lòng thử lại sau ít phút."
+        : "Không thể quét file. Vui lòng thử lại.";
+    return Response.json(
+      {
+        error: errorMessage,
+        exercises: getSampleScannedExercises(Number(grade) || 1),
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Scan error:", error);
     return Response.json(
-      { error: "Failed to scan file" },
-      { status: 500 }
+      {
+        error: "Đã xảy ra lỗi khi quét file.",
+        exercises: getSampleScannedExercises(1),
+      },
+      { status: 200 }
     );
   }
 }
