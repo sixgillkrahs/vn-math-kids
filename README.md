@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧮 Toán Vui Cấp 1
 
-## Getting Started
+Ứng dụng web học toán vui nhộn dành cho học sinh cấp 1 Việt Nam (Lớp 1 - Lớp 5).
 
-First, run the development server:
+## ✨ Tính năng
+
+- **📚 Bài tập theo lớp**: Bài tập toán phù hợp với chương trình học từ lớp 1 đến lớp 5
+  - Lớp 1: Phép cộng, trừ trong phạm vi 10, so sánh số
+  - Lớp 2: Phép cộng, trừ trong phạm vi 100, bảng nhân 2-5
+  - Lớp 3: Phép nhân, chia, cộng trừ trong phạm vi 1000
+  - Lớp 4: Nhân nhiều chữ số, chia số lớn, phân số
+  - Lớp 5: Số thập phân, phần trăm, hình học
+
+- **🤖 AI Quét Bài Tập**: Tải ảnh hoặc file PDF bài tập toán, AI sẽ tự động nhận dạng và tạo bài tập trắc nghiệm
+
+- **🎨 Giao diện thân thiện**: Thiết kế ngộ nghĩnh, đáng yêu với màu sắc tươi sáng, animation vui nhộn phù hợp với trẻ em
+
+- **📊 Theo dõi tiến bộ**: Xem kết quả bài làm với số sao, điểm số và giải thích chi tiết
+
+## 🛠 Công nghệ
+
+- **Frontend**: Next.js 16, React 19, Tailwind CSS 4, Framer Motion
+- **Backend**: Next.js API Routes
+- **Database**: MongoDB (Mongoose)
+- **AI**: Google Gemini 2.0 Flash (quét bài tập)
+- **Deploy**: Vercel
+
+## 🚀 Cài đặt
+
+### Yêu cầu
+
+- Node.js >= 18
+- MongoDB (local hoặc MongoDB Atlas)
+- Gemini API Key (tùy chọn, cho tính năng quét bài tập)
+
+### Cài đặt
 
 ```bash
+# Clone repo
+git clone https://github.com/sixgillkrahs/vn-math-kids.git
+cd vn-math-kids
+
+# Cài dependencies
+npm install
+
+# Copy file cấu hình
+cp .env.example .env.local
+
+# Chỉnh sửa .env.local với thông tin của bạn
+# MONGODB_URI=mongodb+srv://...
+# GEMINI_API_KEY=your-gemini-api-key
+
+# Chạy dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở [http://localhost:3000](http://localhost:3000) để xem ứng dụng.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Cấu trúc dự án
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── exercises/
+│   │   │   ├── generate/route.ts  # Tạo bài tập theo lớp
+│   │   │   └── check/route.ts     # Kiểm tra đáp án
+│   │   ├── scan/route.ts          # AI quét bài tập từ ảnh
+│   │   └── results/route.ts       # Lưu/xem kết quả
+│   ├── grade/[grade]/page.tsx     # Trang làm bài theo lớp
+│   ├── scan/page.tsx              # Trang quét bài tập
+│   ├── layout.tsx                 # Layout chính
+│   └── page.tsx                   # Trang chủ
+├── components/
+│   ├── Header.tsx                 # Header navigation
+│   ├── GradeCard.tsx              # Card chọn lớp
+│   ├── ExerciseView.tsx           # Giao diện làm bài
+│   ├── FileUploader.tsx           # Upload file
+│   └── Confetti.tsx               # Hiệu ứng pháo giấy
+└── lib/
+    ├── mongodb.ts                 # Kết nối MongoDB
+    ├── mathGenerator.ts           # Tạo bài tập toán
+    └── models/
+        ├── Exercise.ts            # Model bài tập
+        └── Result.ts              # Model kết quả
+```
 
-## Learn More
+## 🎮 Sử dụng
 
-To learn more about Next.js, take a look at the following resources:
+1. Chọn lớp học (1-5) trên trang chủ
+2. Chọn số câu hỏi (5, 10, 15, 20)
+3. Bấm "Bắt đầu làm bài"
+4. Chọn đáp án cho mỗi câu hỏi
+5. Xem kết quả và giải thích sau khi hoàn thành
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Quét bài tập bằng AI
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Vào trang "Quét bài"
+2. Chọn lớp phù hợp
+3. Tải ảnh/PDF bài tập lên
+4. AI sẽ nhận dạng và tạo bài tập trắc nghiệm
+5. Làm bài như bình thường
 
-## Deploy on Vercel
+## 📝 License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
