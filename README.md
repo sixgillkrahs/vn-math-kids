@@ -22,7 +22,7 @@
 - **Frontend**: Next.js 16, React 19, Tailwind CSS 4, Framer Motion
 - **Backend**: Next.js API Routes
 - **Database**: MongoDB (Mongoose)
-- **AI**: OpenAI GPT-4o Vision (quét bài tập)
+- **AI**: Google Gemini 2.0 Flash (quét bài tập)
 - **Deploy**: Vercel
 
 ## 🚀 Cài đặt
@@ -31,7 +31,7 @@
 
 - Node.js >= 18
 - MongoDB (local hoặc MongoDB Atlas)
-- OpenAI API Key (tùy chọn, cho tính năng quét bài tập)
+- Gemini API Key (tùy chọn, cho tính năng quét bài tập)
 
 ### Cài đặt
 
@@ -48,7 +48,7 @@ cp .env.example .env.local
 
 # Chỉnh sửa .env.local với thông tin của bạn
 # MONGODB_URI=mongodb+srv://...
-# OPENAI_API_KEY=sk-...
+# GEMINI_API_KEY=your-gemini-api-key
 
 # Chạy dev server
 npm run dev
