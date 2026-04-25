@@ -20,6 +20,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.MONGODB_URI) {
+      return Response.json(
+        { error: "Chưa cấu hình kết nối database. Vui lòng thêm MONGODB_URI vào environment variables." },
+        { status: 503 }
+      );
+    }
+
     await dbConnect();
 
     const docs = exercises.map(
@@ -49,10 +56,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Save exercises error:", error);
-    return Response.json(
-      { error: "Không thể lưu bài tập. Vui lòng thử lại." },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error && error.message.includes("MONGODB_URI")
+        ? "Chưa cấu hình kết nối database. Vui lòng thêm MONGODB_URI vào environment variables."
+        : "Không thể lưu bài tập. Vui lòng thử lại.";
+    return Response.json({ error: message }, { status: 500 });
   }
 }
 
@@ -66,6 +74,16 @@ export async function GET(request: NextRequest) {
       return Response.json(
         { error: "Lớp phải từ 1 đến 5" },
         { status: 400 }
+      );
+    }
+
+    if (!process.env.MONGODB_URI) {
+      return Response.json(
+        {
+          exercises: [],
+          total: 0,
+          message: "Chưa cấu hình kết nối database.",
+        }
       );
     }
 
@@ -99,9 +117,10 @@ export async function GET(request: NextRequest) {
     return Response.json({ exercises, total });
   } catch (error) {
     console.error("Fetch bank exercises error:", error);
-    return Response.json(
-      { error: "Không thể tải bài tập từ ngân hàng đề" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error && error.message.includes("MONGODB_URI")
+        ? "Chưa cấu hình kết nối database."
+        : "Không thể tải bài tập từ ngân hàng đề";
+    return Response.json({ error: message }, { status: 500 });
   }
 }
