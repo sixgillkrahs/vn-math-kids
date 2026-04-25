@@ -17,19 +17,23 @@ export async function POST(request: NextRequest) {
     const exercises = generateExercises(grade, count);
 
     if (process.env.MONGODB_URI) {
-      await dbConnect();
-      await Exercise.insertMany(
-        exercises.map((ex) => ({
-          grade,
-          topic: ex.topic,
-          question: ex.question,
-          options: ex.options,
-          answer: ex.answer,
-          explanation: ex.explanation,
-          difficulty: "easy",
-          source: "generated",
-        }))
-      );
+      try {
+        await dbConnect();
+        await Exercise.insertMany(
+          exercises.map((ex) => ({
+            grade,
+            topic: ex.topic,
+            question: ex.question,
+            options: ex.options,
+            answer: ex.answer,
+            explanation: ex.explanation,
+            difficulty: "easy",
+            source: "generated",
+          }))
+        );
+      } catch (dbError) {
+        console.warn("Could not save exercises to DB:", dbError);
+      }
     }
 
     return Response.json({ exercises });

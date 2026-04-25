@@ -7,9 +7,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (process.env.MONGODB_URI) {
-      await dbConnect();
-      const result = await Result.create(body);
-      return Response.json({ result });
+      try {
+        await dbConnect();
+        const result = await Result.create(body);
+        return Response.json({ result });
+      } catch (dbError) {
+        console.warn("Could not save result to DB:", dbError);
+      }
     }
 
     return Response.json({ result: body, saved: false });
@@ -32,17 +36,22 @@ export async function GET(request: NextRequest) {
       return Response.json({ results: [] });
     }
 
-    await dbConnect();
+    try {
+      await dbConnect();
 
-    const query: Record<string, unknown> = {};
-    if (studentName) query.studentName = studentName;
-    if (grade) query.grade = Number(grade);
+      const query: Record<string, unknown> = {};
+      if (studentName) query.studentName = studentName;
+      if (grade) query.grade = Number(grade);
 
-    const results = await Result.find(query)
-      .sort({ completedAt: -1 })
-      .limit(20);
+      const results = await Result.find(query)
+        .sort({ completedAt: -1 })
+        .limit(20);
 
-    return Response.json({ results });
+      return Response.json({ results });
+    } catch (dbError) {
+      console.warn("Could not fetch results from DB:", dbError);
+      return Response.json({ results: [] });
+    }
   } catch (error) {
     console.error("Get results error:", error);
     return Response.json(
