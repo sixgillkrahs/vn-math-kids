@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
+import { createHash } from "crypto";
 import dbConnect from "@/lib/mongodb";
 import Result from "@/lib/models/Result";
 import User from "@/lib/models/User";
+import { getUserFromRequest } from "@/lib/auth";
+
+function hashId(id: string): string {
+  return createHash("sha256").update(id).digest("base64url").slice(0, 12);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,7 +70,7 @@ export async function GET(request: NextRequest) {
         const u = userMap.get(s._id);
         return {
           rank: index + 1,
-          userId: s._id,
+          userId: hashId(s._id),
           displayName: u?.displayName || "Học sinh",
           avatar: u?.avatar || "🐱",
           totalScore: s.totalScore,
@@ -77,7 +83,10 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    return Response.json({ leaderboard, grade });
+    const me = await getUserFromRequest(request);
+    const myUserId = me ? hashId(me._id.toString()) : null;
+
+    return Response.json({ leaderboard, grade, myUserId });
   } catch (error) {
     console.error("Leaderboard error:", error);
     return Response.json(

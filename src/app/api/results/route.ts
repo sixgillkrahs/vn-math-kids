@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
     if (user) {
       body.userId = user._id.toString();
       body.studentName = body.studentName || user.displayName;
+    } else {
+      delete body.userId;
     }
 
     if (process.env.MONGODB_URI) {

@@ -45,23 +45,27 @@ function getRankIcon(rank: number) {
 }
 
 export default function LeaderboardPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [grade, setGrade] = useState(user?.grade || 1);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchLeaderboard = useCallback(async (g: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/leaderboard?grade=${g}`);
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`/api/leaderboard?grade=${g}`, { headers });
       const data = await res.json();
       setLeaderboard(data.leaderboard || []);
+      setMyUserId(data.myUserId || null);
     } catch {
       setLeaderboard([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   const handleGradeChange = useCallback(
     (g: number) => {
@@ -155,7 +159,7 @@ export default function LeaderboardPage() {
         <div className="space-y-3">
           <AnimatePresence mode="wait">
             {leaderboard.map((entry, idx) => {
-              const isMe = user?.id === entry.userId;
+              const isMe = myUserId === entry.userId;
               return (
                 <motion.div
                   key={entry.userId}
