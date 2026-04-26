@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Result from "@/lib/models/Result";
+import User from "@/lib/models/User";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -19,6 +20,32 @@ export async function POST(request: NextRequest) {
       try {
         await dbConnect();
         const result = await Result.create(body);
+
+        if (user) {
+          try {
+            const today = new Date().toISOString().slice(0, 10);
+            const yesterday = new Date(Date.now() - 86400000)
+              .toISOString()
+              .slice(0, 10);
+            const dbUser = await User.findById(user._id);
+            if (dbUser && dbUser.lastActiveDate !== today) {
+              const newStreak =
+                dbUser.lastActiveDate === yesterday
+                  ? (dbUser.currentStreak || 0) + 1
+                  : 1;
+              dbUser.currentStreak = newStreak;
+              dbUser.longestStreak = Math.max(
+                dbUser.longestStreak || 0,
+                newStreak
+              );
+              dbUser.lastActiveDate = today;
+              await dbUser.save();
+            }
+          } catch (streakErr) {
+            console.warn("Could not update streak:", streakErr);
+          }
+        }
+
         return Response.json({ result });
       } catch (dbError) {
         console.warn("Could not save result to DB:", dbError);

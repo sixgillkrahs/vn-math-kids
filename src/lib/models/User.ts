@@ -7,6 +7,9 @@ export interface IUser extends Document {
   grade: number;
   avatar: string;
   role: "user" | "admin";
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string | null;
   createdAt: Date;
 }
 
@@ -17,6 +20,9 @@ const UserSchema = new Schema<IUser>({
   grade: { type: Number, required: true, min: 1, max: 5 },
   avatar: { type: String, default: "🐱" },
   role: { type: String, enum: ["user", "admin"], default: "user" },
+  currentStreak: { type: Number, default: 0 },
+  longestStreak: { type: Number, default: 0 },
+  lastActiveDate: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 
