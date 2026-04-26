@@ -3,11 +3,27 @@
 import { motion } from "framer-motion";
 import GradeCard from "@/components/GradeCard";
 import Link from "next/link";
-import { ScanLine, Trophy } from "lucide-react";
+import { ScanLine, Trophy, Flame } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const [streakData, setStreakData] = useState<{
+    currentStreak: number;
+    longestStreak: number;
+    activeToday: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!user || !token) return;
+    fetch("/api/streak", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setStreakData(d))
+      .catch(() => {});
+  }, [user, token]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -29,6 +45,36 @@ export default function Home() {
           1 đến lớp 5 nhé! 🌟
         </p>
       </motion.div>
+
+      {/* Streak Card */}
+      {user && streakData && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-8"
+        >
+          <div className="mx-auto max-w-md rounded-2xl bg-gradient-to-r from-orange-400 to-red-500 p-5 text-center text-white shadow-lg">
+            <div className="flex items-center justify-center gap-3">
+              <Flame size={32} className="text-yellow-200" />
+              <div>
+                <div className="text-3xl font-black">
+                  {streakData.currentStreak} ngày
+                </div>
+                <div className="text-sm font-semibold text-white/80">
+                  {streakData.activeToday
+                    ? "Hôm nay đã học rồi!"
+                    : "Hãy làm bài để giữ chuỗi streak!"}
+                </div>
+              </div>
+            </div>
+            {streakData.longestStreak > 0 && (
+              <div className="mt-2 text-xs text-white/70">
+                Kỷ lục: {streakData.longestStreak} ngày liên tiếp
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Grade Cards */}
       <section className="mb-10">

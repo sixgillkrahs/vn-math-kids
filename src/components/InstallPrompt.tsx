@@ -56,8 +56,9 @@ export default function InstallPrompt() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
     if (outcome === "accepted") {
-      setDeferredPrompt(null);
+      setDismissed(true);
     }
   };
 
