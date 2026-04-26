@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Play, CheckCircle, Loader2, Pencil, X, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Play, CheckCircle, Loader2, Pencil, X, Plus, Trash2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import FileUploader from "@/components/FileUploader";
 import ExerciseView from "@/components/ExerciseView";
+import { useAuth } from "@/components/AuthProvider";
 import type { GeneratedExercise } from "@/lib/mathGenerator";
 
 interface ScannedExercise {
@@ -16,7 +17,44 @@ interface ScannedExercise {
   explanation: string;
 }
 
+function AdminGuard() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center px-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="mx-auto max-w-md text-center"
+      >
+        <div className="rounded-3xl bg-gradient-to-br from-orange-50 to-red-50 p-8 shadow-xl">
+          <ShieldAlert className="mx-auto mb-4 text-orange-500" size={64} />
+          <h2 className="mb-2 text-2xl font-extrabold text-gray-800">
+            Chỉ dành cho Admin
+          </h2>
+          <p className="mb-6 text-gray-600">
+            Tính năng quét bài tập chỉ dành cho tài khoản admin. Vui lòng đăng nhập bằng tài khoản admin để sử dụng.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Link
+              href="/login"
+              className="rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-3 font-bold text-white shadow-lg transition hover:shadow-xl"
+            >
+              Đăng nhập
+            </Link>
+            <Link
+              href="/"
+              className="rounded-full bg-gray-100 px-6 py-3 font-bold text-gray-600 transition hover:bg-gray-200"
+            >
+              Về trang chủ
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function ScanPage() {
+  const { user } = useAuth();
   const [grade, setGrade] = useState(1);
   const [scannedRaw, setScannedRaw] = useState<ScannedExercise[] | null>(null);
   const [exercises, setExercises] = useState<GeneratedExercise[] | null>(null);
@@ -24,6 +62,7 @@ export default function ScanPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const isAdmin = user?.role === "admin";
 
   const handleScanned = (scanned: ScannedExercise[]) => {
     setScannedRaw(scanned);
@@ -90,6 +129,8 @@ export default function ScanPage() {
     setSaved(false);
     setSaveError(null);
   };
+
+  if (!isAdmin) return <AdminGuard />;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">

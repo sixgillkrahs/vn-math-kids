@@ -14,6 +14,7 @@ interface UserInfo {
   displayName: string;
   grade: number;
   avatar: string;
+  role: "user" | "admin";
 }
 
 interface AuthContextType {
