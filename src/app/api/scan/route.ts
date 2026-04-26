@@ -35,7 +35,13 @@ export async function POST(request: NextRequest) {
 
     const prompt = `You are a math exercise extractor for Vietnamese elementary school students (grades 1-5).
 Extract all math problems from this image and return them as a JSON array.
-Each exercise MUST have: question, answer, options (array of exactly 4 strings), topic, explanation.
+Each exercise MUST have: question, answer, options (array of exactly 4 strings), topic, explanation, difficulty.
+
+CRITICAL RULES for "difficulty":
+- "difficulty" must be one of: "easy", "medium", "hard"
+- "easy": basic operations, simple recognition, single-step problems
+- "medium": multi-step problems, word problems with 2 steps, intermediate concepts
+- "hard": complex word problems, advanced concepts, multi-step reasoning, olympiad-style
 
 CRITICAL RULES for "options":
 - "options" must be an array of exactly 4 answer choices including the correct answer.
@@ -48,7 +54,7 @@ CRITICAL RULES for "options":
 - Do NOT mix formats (e.g. "66 cm" with "56" without unit is WRONG).
 
 Return ONLY valid JSON array, no markdown, no code fences.
-Example: [{"question": "70 cm - 30 cm + 26 cm = ?", "answer": "66 cm", "options": ["66 cm", "56 cm", "76 cm", "60 cm"], "topic": "Phép tính độ dài", "explanation": "70 - 30 + 26 = 66 cm"}]
+Example: [{"question": "70 cm - 30 cm + 26 cm = ?", "answer": "66 cm", "options": ["66 cm", "56 cm", "76 cm", "60 cm"], "topic": "Phép tính độ dài", "explanation": "70 - 30 + 26 = 66 cm", "difficulty": "easy"}]
 
 Extract math exercises from this image for grade ${grade || "1-5"} students in Vietnam.`;
 
@@ -162,6 +168,7 @@ function normalizeExercise(ex: {
   options?: string[];
   topic?: string;
   explanation?: string;
+  difficulty?: string;
 }) {
   let options = ex.options;
 
@@ -195,7 +202,12 @@ function normalizeExercise(ex: {
     if (options.length > 4) options = options.slice(0, 4);
   }
 
-  return { ...ex, options };
+  const validDifficulties = ["easy", "medium", "hard"];
+  const difficulty = validDifficulties.includes(ex.difficulty || "")
+    ? ex.difficulty
+    : "easy";
+
+  return { ...ex, options, difficulty };
 }
 
 function getSampleScannedExercises(grade: number) {

@@ -15,7 +15,14 @@ interface ScannedExercise {
   options?: string[];
   topic: string;
   explanation: string;
+  difficulty?: "easy" | "medium" | "hard";
 }
+
+const difficultyLabels: Record<string, { label: string; color: string }> = {
+  easy: { label: "Dễ", color: "bg-green-100 text-green-700" },
+  medium: { label: "Khó", color: "bg-yellow-100 text-yellow-700" },
+  hard: { label: "Nâng cao", color: "bg-red-100 text-red-700" },
+};
 
 function AdminGuard() {
   return (
@@ -215,6 +222,11 @@ export default function ScanPage() {
                             {ex.topic}
                           </span>
                         )}
+                        {ex.difficulty && difficultyLabels[ex.difficulty] && (
+                          <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyLabels[ex.difficulty].color}`}>
+                            {difficultyLabels[ex.difficulty].label}
+                          </span>
+                        )}
                       </p>
                       {ex.options && ex.options.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -386,6 +398,9 @@ function EditExerciseCard({
   const [options, setOptions] = useState<string[]>(exercise.options || []);
   const [topic, setTopic] = useState(exercise.topic);
   const [explanation, setExplanation] = useState(exercise.explanation);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
+    exercise.difficulty || "easy"
+  );
 
   const updateOption = (oi: number, value: string) => {
     const copy = [...options];
@@ -412,6 +427,7 @@ function EditExerciseCard({
       options: trimmedOpts,
       topic: topic.trim(),
       explanation: explanation.trim(),
+      difficulty,
     });
   };
 
@@ -468,6 +484,26 @@ function EditExerciseCard({
             onChange={(e) => setTopic(e.target.value)}
             className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
           />
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-gray-500">Mức độ</label>
+        <div className="flex gap-2">
+          {(["easy", "medium", "hard"] as const).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDifficulty(d)}
+              className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                difficulty === d
+                  ? difficultyLabels[d].color + " ring-2 ring-offset-1 ring-current"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              {difficultyLabels[d].label}
+            </button>
+          ))}
         </div>
       </div>
 

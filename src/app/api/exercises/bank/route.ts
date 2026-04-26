@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
+    const validDifficulties = ["easy", "medium", "hard"];
     const docs = exercises.map(
       (ex: {
         question: string;
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
         topic?: string;
         explanation?: string;
         options?: string[];
+        difficulty?: string;
       }) => ({
         grade,
         question: ex.question,
@@ -43,7 +45,9 @@ export async function POST(request: NextRequest) {
         topic: ex.topic || "Bài tập quét",
         explanation: ex.explanation || "",
         options: ex.options || [],
-        difficulty: "easy" as const,
+        difficulty: validDifficulties.includes(ex.difficulty || "")
+          ? ex.difficulty
+          : "easy",
         source: "scanned" as const,
       })
     );
@@ -69,6 +73,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const grade = Number(searchParams.get("grade"));
     const count = Number(searchParams.get("count")) || 10;
+    const difficulty = searchParams.get("difficulty");
 
     if (!grade || grade < 1 || grade > 5) {
       return Response.json(
@@ -89,18 +94,25 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const total = await Exercise.countDocuments({ grade });
+    const filter: Record<string, unknown> = { grade };
+    if (difficulty && ["easy", "medium", "hard"].includes(difficulty)) {
+      filter.difficulty = difficulty;
+    }
+
+    const total = await Exercise.countDocuments(filter);
 
     if (total === 0) {
       return Response.json({
         exercises: [],
         total: 0,
-        message: "Chưa có bài tập nào trong ngân hàng đề cho lớp này",
+        message: difficulty
+          ? `Chưa có bài tập mức "${difficulty}" trong ngân hàng đề cho lớp này`
+          : "Chưa có bài tập nào trong ngân hàng đề cho lớp này",
       });
     }
 
     const exercises = await Exercise.aggregate([
-      { $match: { grade } },
+      { $match: filter },
       { $sample: { size: Math.min(count, total) } },
       {
         $project: {
@@ -110,6 +122,7 @@ export async function GET(request: NextRequest) {
           options: 1,
           topic: 1,
           explanation: 1,
+          difficulty: 1,
         },
       },
     ]);
