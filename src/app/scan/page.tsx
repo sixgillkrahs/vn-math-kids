@@ -11,6 +11,7 @@ import type { GeneratedExercise } from "@/lib/mathGenerator";
 interface ScannedExercise {
   question: string;
   answer: string;
+  options?: string[];
   topic: string;
   explanation: string;
 }
@@ -59,7 +60,9 @@ export default function ScanPage() {
       answer: ex.answer,
       topic: ex.topic,
       explanation: ex.explanation,
-      options: generateOptionsFromAnswer(ex.answer),
+      options: ex.options && ex.options.length >= 2
+        ? ex.options
+        : generateOptionsFromAnswer(ex.answer),
     }));
     setExercises(mapped);
   };
@@ -141,6 +144,22 @@ export default function ScanPage() {
                         </span>
                       )}
                     </p>
+                    {ex.options && ex.options.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {ex.options.map((opt, oi) => (
+                          <span
+                            key={oi}
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              opt === ex.answer
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {opt}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {ex.explanation && (
                       <p className="mt-1 text-xs text-gray-400">
                         {ex.explanation}
@@ -270,17 +289,25 @@ export default function ScanPage() {
 }
 
 function generateOptionsFromAnswer(answer: string): string[] {
-  const num = parseFloat(answer);
+  const unitMatch = answer.match(/^([\d.,/]+)\s*(.+)$/);
+  const unit = unitMatch ? unitMatch[2] : "";
+  const numStr = unitMatch ? unitMatch[1] : answer;
+  const num = parseFloat(numStr.replace(",", "."));
   if (!isNaN(num)) {
     const opts = new Set<string>([answer]);
+    const magnitude = Math.max(1, Math.floor(Math.abs(num) * 0.15) || 1);
     while (opts.size < 4) {
-      const delta = Math.floor(Math.random() * 5) + 1;
+      const delta = Math.floor(Math.random() * magnitude * 2) + 1;
       const sign = Math.random() > 0.5 ? 1 : -1;
-      opts.add(String(num + delta * sign));
+      const newNum = num + delta * sign;
+      const formatted = Number.isInteger(num)
+        ? String(Math.round(newNum))
+        : newNum.toFixed(numStr.includes(".") ? (numStr.split(".")[1]?.length || 1) : 1);
+      opts.add(unit ? `${formatted} ${unit}` : formatted);
     }
     return shuffleArr([...opts]);
   }
-  return shuffleArr([answer, "?", "Không xác định", "Khác"]);
+  return shuffleArr([answer, "Không xác định", "Đáp án khác", "Không có đáp án"]);
 }
 
 function shuffleArr<T>(arr: T[]): T[] {
