@@ -147,6 +147,19 @@ export default function ExamPage({
     }
   };
 
+  const handleRestart = () => {
+    if (!exam) return;
+    setCurrent(0);
+    setSelected(null);
+    setAnswered(false);
+    setAnswers(new Array(exam.exercises.length).fill(null));
+    setCorrectCount(0);
+    setShowConfetti(false);
+    setTimeTaken(0);
+    setTimeLeft(exam.timeLimit * 60);
+    setState("ready");
+  };
+
   const handleNext = () => {
     if (!exam) return;
     if (current + 1 >= exam.exercises.length) {
@@ -334,13 +347,13 @@ export default function ExamPage({
           </div>
 
           <div className="flex justify-center gap-3">
-            <Link
-              href={`/exam/${id}`}
+            <button
+              onClick={handleRestart}
               className="flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-6 py-3 font-bold text-white shadow-lg transition hover:shadow-xl"
             >
               <RotateCcw size={18} />
               Thi lại
-            </Link>
+            </button>
             <Link
               href="/exam"
               className="flex items-center gap-2 rounded-full bg-gray-100 px-6 py-3 font-bold text-gray-600 transition hover:bg-gray-200"

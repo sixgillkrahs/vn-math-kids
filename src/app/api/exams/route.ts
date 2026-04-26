@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     if (grade) filter.grade = Number(grade);
 
     const exams = await Exam.find(filter)
-      .select("title grade timeLimit difficulty createdAt")
+      .select("title grade timeLimit difficulty exercises createdAt")
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
