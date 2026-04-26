@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Play, CheckCircle, Loader2, Pencil, X, Plus, Trash2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Save, Play, CheckCircle, Loader2, Pencil, X, Plus, Trash2, ShieldAlert, Clock, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import FileUploader from "@/components/FileUploader";
 import ExerciseView from "@/components/ExerciseView";
@@ -69,6 +70,12 @@ export default function ScanPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [examMode, setExamMode] = useState(false);
+  const [examTitle, setExamTitle] = useState("");
+  const [examTimeLimit, setExamTimeLimit] = useState(30);
+  const [savingExam, setSavingExam] = useState(false);
+  const [examSaved, setExamSaved] = useState(false);
+  const router = useRouter();
   const isAdmin = user?.role === "admin";
 
   const handleScanned = (scanned: ScannedExercise[]) => {
@@ -130,11 +137,52 @@ export default function ScanPage() {
     setExercises(mapped);
   };
 
+  const handleSaveAsExam = async () => {
+    if (!scannedRaw) return;
+    const title = examTitle.trim() || `Đề thi Lớp ${grade}`;
+    setSavingExam(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/exams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          grade,
+          timeLimit: examTimeLimit,
+          exercises: scannedRaw.map((ex) => ({
+            question: ex.question,
+            answer: ex.answer,
+            options: ex.options || [],
+            topic: ex.topic,
+            explanation: ex.explanation,
+            difficulty: ex.difficulty || "easy",
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExamSaved(true);
+        setTimeout(() => {
+          router.push(`/exam/${data.examId}`);
+        }, 1000);
+      } else {
+        setSaveError(data.error || "Không thể tạo đề thi");
+      }
+    } catch {
+      setSaveError("Đã xảy ra lỗi khi tạo đề thi");
+    } finally {
+      setSavingExam(false);
+    }
+  };
+
   const handleReset = () => {
     setScannedRaw(null);
     setExercises(null);
     setSaved(false);
     setSaveError(null);
+    setExamSaved(false);
+    setExamMode(false);
   };
 
   if (!isAdmin) return <AdminGuard />;
@@ -263,44 +311,141 @@ export default function ScanPage() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          {/* Mode toggle */}
+          <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-gray-100 p-1">
             <button
-              onClick={handleSaveToBank}
-              disabled={saving || saved}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 font-bold shadow-lg transition ${
-                saved
-                  ? "bg-green-500 text-white"
-                  : saving
-                    ? "bg-gray-300 text-gray-500"
-                    : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-xl"
+              onClick={() => setExamMode(false)}
+              className={`flex-1 rounded-xl px-4 py-2 text-sm font-bold transition ${
+                !examMode ? "bg-white text-indigo-600 shadow" : "text-gray-500"
               }`}
             >
-              {saving ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Đang lưu...
-                </>
-              ) : saved ? (
-                <>
-                  <CheckCircle size={18} />
-                  Đã lưu vào ngân hàng đề!
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Lưu vào ngân hàng đề
-                </>
-              )}
+              <Save size={14} className="mr-1 inline" />
+              Ngân hàng đề
             </button>
-
             <button
-              onClick={handleStartExercises}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-3 font-bold text-white shadow-lg transition hover:shadow-xl"
+              onClick={() => setExamMode(true)}
+              className={`flex-1 rounded-xl px-4 py-2 text-sm font-bold transition ${
+                examMode ? "bg-white text-orange-600 shadow" : "text-gray-500"
+              }`}
             >
-              <Play size={18} />
-              Bắt đầu làm bài
+              <FileText size={14} className="mr-1 inline" />
+              Tạo đề thi
             </button>
           </div>
+
+          {examMode ? (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4">
+                <h3 className="mb-3 text-sm font-bold text-orange-700">
+                  <FileText size={16} className="mr-1 inline" />
+                  Thông tin đề thi
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      Tên đề thi
+                    </label>
+                    <input
+                      type="text"
+                      value={examTitle}
+                      onChange={(e) => setExamTitle(e.target.value)}
+                      placeholder={`Đề thi Lớp ${grade}`}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      <Clock size={12} className="mr-1 inline" />
+                      Thời gian làm bài (phút)
+                    </label>
+                    <div className="flex gap-2">
+                      {[15, 30, 45, 60, 90].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setExamTimeLimit(t)}
+                          className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                            examTimeLimit === t
+                              ? "bg-orange-500 text-white shadow"
+                              : "bg-white text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {t} phút
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveAsExam}
+                disabled={savingExam || examSaved}
+                className={`flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-bold shadow-lg transition ${
+                  examSaved
+                    ? "bg-green-500 text-white"
+                    : savingExam
+                      ? "bg-gray-300 text-gray-500"
+                      : "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-xl"
+                }`}
+              >
+                {savingExam ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Đang tạo đề thi...
+                  </>
+                ) : examSaved ? (
+                  <>
+                    <CheckCircle size={18} />
+                    Đã tạo đề thi! Đang chuyển...
+                  </>
+                ) : (
+                  <>
+                    <FileText size={18} />
+                    Tạo đề thi ({scannedRaw.length} câu · {examTimeLimit} phút)
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={handleSaveToBank}
+                disabled={saving || saved}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 font-bold shadow-lg transition ${
+                  saved
+                    ? "bg-green-500 text-white"
+                    : saving
+                      ? "bg-gray-300 text-gray-500"
+                      : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-xl"
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : saved ? (
+                  <>
+                    <CheckCircle size={18} />
+                    Đã lưu vào ngân hàng đề!
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Lưu vào ngân hàng đề
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleStartExercises}
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-3 font-bold text-white shadow-lg transition hover:shadow-xl"
+              >
+                <Play size={18} />
+                Bắt đầu làm bài
+              </button>
+            </div>
+          )}
 
           {saveError && (
             <p className="mt-3 text-center text-sm font-semibold text-red-500">
