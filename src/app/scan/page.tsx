@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Play, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Play, CheckCircle, Loader2, Pencil, X, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import FileUploader from "@/components/FileUploader";
 import ExerciseView from "@/components/ExerciseView";
@@ -23,11 +23,28 @@ export default function ScanPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   const handleScanned = (scanned: ScannedExercise[]) => {
     setScannedRaw(scanned);
     setSaved(false);
     setSaveError(null);
+    setEditingIdx(null);
+  };
+
+  const updateExercise = (idx: number, updated: ScannedExercise) => {
+    if (!scannedRaw) return;
+    const copy = [...scannedRaw];
+    copy[idx] = updated;
+    setScannedRaw(copy);
+    setSaved(false);
+  };
+
+  const deleteExercise = (idx: number) => {
+    if (!scannedRaw) return;
+    const copy = scannedRaw.filter((_, i) => i !== idx);
+    setScannedRaw(copy.length > 0 ? copy : null);
+    setEditingIdx(null);
   };
 
   const handleSaveToBank = async () => {
@@ -126,47 +143,69 @@ export default function ScanPage() {
             {scannedRaw.map((ex, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                className={`rounded-2xl border bg-white p-4 shadow-sm transition ${
+                  editingIdx === i ? "border-indigo-400 ring-2 ring-indigo-100" : "border-gray-200"
+                }`}
               >
-                <div className="mb-1 flex items-start gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-600">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{ex.question}</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      <span className="font-medium text-green-600">
-                        Đáp án: {ex.answer}
-                      </span>
-                      {ex.topic && (
-                        <span className="ml-3 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
-                          {ex.topic}
+                {editingIdx === i ? (
+                  <EditExerciseCard
+                    exercise={ex}
+                    index={i}
+                    onSave={(updated) => {
+                      updateExercise(i, updated);
+                      setEditingIdx(null);
+                    }}
+                    onCancel={() => setEditingIdx(null)}
+                    onDelete={() => deleteExercise(i)}
+                  />
+                ) : (
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-600">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800">{ex.question}</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        <span className="font-medium text-green-600">
+                          Đáp án: {ex.answer}
                         </span>
-                      )}
-                    </p>
-                    {ex.options && ex.options.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {ex.options.map((opt, oi) => (
-                          <span
-                            key={oi}
-                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              opt === ex.answer
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {opt}
+                        {ex.topic && (
+                          <span className="ml-3 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                            {ex.topic}
                           </span>
-                        ))}
-                      </div>
-                    )}
-                    {ex.explanation && (
-                      <p className="mt-1 text-xs text-gray-400">
-                        {ex.explanation}
+                        )}
                       </p>
-                    )}
+                      {ex.options && ex.options.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {ex.options.map((opt, oi) => (
+                            <span
+                              key={oi}
+                              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                opt === ex.answer
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              {opt}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {ex.explanation && (
+                        <p className="mt-1 text-xs text-gray-400">
+                          {ex.explanation}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setEditingIdx(i)}
+                      className="shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition"
+                      title="Chỉnh sửa"
+                    >
+                      <Pencil size={16} />
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -284,6 +323,185 @@ export default function ScanPage() {
           </div>
         </motion.div>
       )}
+    </div>
+  );
+}
+
+function EditExerciseCard({
+  exercise,
+  index,
+  onSave,
+  onCancel,
+  onDelete,
+}: {
+  exercise: ScannedExercise;
+  index: number;
+  onSave: (updated: ScannedExercise) => void;
+  onCancel: () => void;
+  onDelete: () => void;
+}) {
+  const [question, setQuestion] = useState(exercise.question);
+  const [answer, setAnswer] = useState(exercise.answer);
+  const [options, setOptions] = useState<string[]>(exercise.options || []);
+  const [topic, setTopic] = useState(exercise.topic);
+  const [explanation, setExplanation] = useState(exercise.explanation);
+
+  const updateOption = (oi: number, value: string) => {
+    const copy = [...options];
+    copy[oi] = value;
+    setOptions(copy);
+  };
+
+  const addOption = () => {
+    setOptions([...options, ""]);
+  };
+
+  const removeOption = (oi: number) => {
+    setOptions(options.filter((_, i) => i !== oi));
+  };
+
+  const handleSave = () => {
+    const trimmedOpts = options.map((o) => o.trim()).filter(Boolean);
+    if (!trimmedOpts.includes(answer.trim())) {
+      trimmedOpts.unshift(answer.trim());
+    }
+    onSave({
+      question: question.trim(),
+      answer: answer.trim(),
+      options: trimmedOpts,
+      topic: topic.trim(),
+      explanation: explanation.trim(),
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-sm font-bold text-indigo-600">
+          <Pencil size={14} />
+          Chỉnh sửa câu {index + 1}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onDelete}
+            className="rounded-full p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 transition"
+            title="Xoá câu hỏi"
+          >
+            <Trash2 size={16} />
+          </button>
+          <button
+            onClick={onCancel}
+            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+            title="Huỷ"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-gray-500">Câu hỏi</label>
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-green-600">Đáp án đúng</label>
+          <input
+            type="text"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            className="w-full rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-800 focus:border-green-400 focus:ring-2 focus:ring-green-100 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-gray-500">Chủ đề</label>
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-gray-500">
+          Các đáp án (bao gồm đáp án đúng)
+        </label>
+        <div className="space-y-2">
+          {options.map((opt, oi) => (
+            <div key={oi} className="flex items-center gap-2">
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  opt.trim() === answer.trim()
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-200 text-gray-500"
+                }`}
+              >
+                {String.fromCharCode(65 + oi)}
+              </span>
+              <input
+                type="text"
+                value={opt}
+                onChange={(e) => updateOption(oi, e.target.value)}
+                className={`flex-1 rounded-lg border px-3 py-1.5 text-sm focus:outline-none ${
+                  opt.trim() === answer.trim()
+                    ? "border-green-300 bg-green-50 text-green-800 focus:ring-2 focus:ring-green-100"
+                    : "border-gray-200 text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                }`}
+              />
+              {options.length > 2 && (
+                <button
+                  onClick={() => removeOption(oi)}
+                  className="rounded-full p-1 text-gray-300 hover:text-red-500 transition"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+          {options.length < 6 && (
+            <button
+              onClick={addOption}
+              className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition"
+            >
+              <Plus size={14} />
+              Thêm đáp án
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-gray-500">Giải thích</label>
+        <input
+          type="text"
+          value={explanation}
+          onChange={(e) => setExplanation(e.target.value)}
+          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button
+          onClick={onCancel}
+          className="rounded-full px-4 py-1.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 transition"
+        >
+          Huỷ
+        </button>
+        <button
+          onClick={handleSave}
+          className="rounded-full bg-indigo-500 px-4 py-1.5 text-sm font-bold text-white hover:bg-indigo-600 transition"
+        >
+          Lưu thay đổi
+        </button>
+      </div>
     </div>
   );
 }
