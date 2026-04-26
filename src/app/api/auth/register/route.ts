@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         displayName: user.displayName,
         grade: user.grade,
         avatar: user.avatar,
+        role: user.role || "user",
       },
     });
   } catch (error) {
