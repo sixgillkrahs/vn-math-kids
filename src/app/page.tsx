@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import GradeCard from "@/components/GradeCard";
 import Link from "next/link";
-import { ScanLine, Trophy, Flame } from "lucide-react";
+import { ScanLine, Trophy, Flame, FileText } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useState, useEffect } from "react";
 
@@ -119,6 +119,38 @@ export default function Home() {
               </Link>
             </motion.div>
           )}
+
+          {/* Exam Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link href="/exam">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-400 to-red-500 p-6 text-white shadow-xl shadow-red-200 cursor-pointer transition-shadow hover:shadow-2xl">
+                <div className="absolute -right-4 -top-4 text-8xl opacity-20">
+                  ⏰
+                </div>
+                <div className="relative z-10">
+                  <div className="mb-2 flex items-center gap-2">
+                    <FileText size={36} />
+                    <h2 className="text-2xl font-extrabold">Thi Đấu</h2>
+                  </div>
+                  <p className="text-sm font-medium text-white/90">
+                    Làm đề thi có thời gian giới hạn!
+                  </p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-3xl">📝</span>
+                    <span className="rounded-full bg-white/25 px-4 py-1.5 text-sm font-bold backdrop-blur-sm">
+                      Vào thi →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
 
           {/* Leaderboard Card */}
           <motion.div
