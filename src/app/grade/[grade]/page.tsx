@@ -19,6 +19,13 @@ const gradeInfo: Record<
   5: { name: "Lớp 5", emoji: "🏆", color: "from-purple-400 to-violet-500", mascot: "🦁" },
 };
 
+const difficultyOptions = [
+  { value: "", label: "Tất cả", color: "bg-white/20 text-white" },
+  { value: "easy", label: "Dễ", color: "bg-green-100 text-green-700" },
+  { value: "medium", label: "Khó", color: "bg-yellow-100 text-yellow-700" },
+  { value: "hard", label: "Nâng cao", color: "bg-red-100 text-red-700" },
+];
+
 type ExerciseMode = "select" | "new" | "bank";
 
 export default function GradePage({
@@ -38,6 +45,7 @@ export default function GradePage({
   const [mode, setMode] = useState<ExerciseMode>("select");
   const [bankError, setBankError] = useState<string | null>(null);
   const [bankTotal, setBankTotal] = useState<number | null>(null);
+  const [difficulty, setDifficulty] = useState("");
 
   const fetchNewExercises = useCallback(async () => {
     setLoading(true);
@@ -58,8 +66,9 @@ export default function GradePage({
     setLoading(true);
     setBankError(null);
     try {
+      const diffParam = difficulty ? `&difficulty=${difficulty}` : "";
       const res = await fetch(
-        `/api/exercises/bank?grade=${gradeNum}&count=${count}`
+        `/api/exercises/bank?grade=${gradeNum}&count=${count}${diffParam}`
       );
       const data = await res.json();
       if (data.exercises && data.exercises.length > 0) {
@@ -94,19 +103,21 @@ export default function GradePage({
     } finally {
       setLoading(false);
     }
-  }, [gradeNum, count]);
+  }, [gradeNum, count, difficulty]);
 
-  const checkBankTotal = useCallback(async () => {
+  const checkBankTotal = useCallback(async (diff?: string) => {
+    const d = diff ?? difficulty;
     try {
+      const diffParam = d ? `&difficulty=${d}` : "";
       const res = await fetch(
-        `/api/exercises/bank?grade=${gradeNum}&count=1`
+        `/api/exercises/bank?grade=${gradeNum}&count=1${diffParam}`
       );
       const data = await res.json();
       setBankTotal(data.total ?? 0);
     } catch {
       setBankTotal(0);
     }
-  }, [gradeNum]);
+  }, [gradeNum, difficulty]);
 
   const handleStart = (selectedMode: "new" | "bank") => {
     setStarted(true);
@@ -218,6 +229,31 @@ export default function GradePage({
                       : `Chưa có bài tập nào cho ${info.name}. Hãy quét bài tập trước!`}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-bold text-white/80">Mức độ:</p>
+                <div className="flex justify-center gap-2">
+                  {difficultyOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        setDifficulty(opt.value);
+                        setBankTotal(null);
+                        checkBankTotal(opt.value);
+                      }}
+                      className={`rounded-full px-4 py-1.5 text-xs font-bold transition ${
+                        difficulty === opt.value
+                          ? opt.value
+                            ? opt.color + " shadow-lg"
+                            : "bg-white text-indigo-600 shadow-lg"
+                          : "bg-white/20 text-white hover:bg-white/30"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {bankError && (
