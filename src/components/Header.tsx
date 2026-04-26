@@ -1,11 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Home, ScanLine, Trophy, LogIn, LogOut } from "lucide-react";
+import {
+  BookOpen,
+  Home,
+  ScanLine,
+  Trophy,
+  LogIn,
+  LogOut,
+  Flame,
+} from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { useState, useEffect } from "react";
 
 export default function Header() {
-  const { user, logout, loading } = useAuth();
+  const { user, token, logout, loading } = useAuth();
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    if (!user || !token) return;
+    const controller = new AbortController();
+    fetch("/api/streak", {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((d) => setStreak(d.currentStreak || 0))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [user, token]);
 
   return (
     <header className="bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 shadow-lg">
@@ -50,6 +73,12 @@ export default function Header() {
             <>
               {user ? (
                 <div className="flex items-center gap-2">
+                  {streak > 0 && (
+                    <span className="flex items-center gap-1 rounded-full bg-orange-400/90 px-3 py-2 text-sm font-bold text-white backdrop-blur-sm shadow">
+                      <Flame size={16} className="text-yellow-200" />
+                      {streak}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1 rounded-full bg-white/30 px-3 py-2 text-sm font-bold text-white backdrop-blur-sm">
                     <span className="text-lg">{user.avatar}</span>
                     <span className="hidden sm:inline">{user.displayName}</span>
