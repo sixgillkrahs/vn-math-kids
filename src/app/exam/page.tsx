@@ -76,7 +76,7 @@ export default function ExamListPage() {
       {/* Grade filter */}
       <div className="mb-6 flex flex-wrap justify-center gap-2">
         <button
-          onClick={() => { setLoading(true); setGradeFilter(0); }}
+          onClick={() => { if (gradeFilter === 0) return; setLoading(true); setGradeFilter(0); }}
           className={`rounded-full px-4 py-2 text-sm font-bold transition ${
             gradeFilter === 0
               ? "bg-indigo-500 text-white shadow"
@@ -88,7 +88,7 @@ export default function ExamListPage() {
         {[1, 2, 3, 4, 5].map((g) => (
           <button
             key={g}
-            onClick={() => { setLoading(true); setGradeFilter(g); }}
+            onClick={() => { if (gradeFilter === g) return; setLoading(true); setGradeFilter(g); }}
             className={`rounded-full px-4 py-2 text-sm font-bold transition ${
               gradeFilter === g
                 ? "bg-indigo-500 text-white shadow"
