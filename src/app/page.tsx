@@ -3,9 +3,12 @@
 import { motion } from "framer-motion";
 import GradeCard from "@/components/GradeCard";
 import Link from "next/link";
-import { ScanLine } from "lucide-react";
+import { ScanLine, Trophy } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Home() {
+  const { user } = useAuth();
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       {/* Hero Section */}
@@ -68,8 +71,61 @@ export default function Home() {
               </div>
             </Link>
           </motion.div>
+
+          {/* Leaderboard Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link href="/leaderboard">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white shadow-xl shadow-orange-200 cursor-pointer transition-shadow hover:shadow-2xl">
+                <div className="absolute -right-4 -top-4 text-8xl opacity-20">
+                  🏆
+                </div>
+                <div className="relative z-10">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Trophy size={36} />
+                    <h2 className="text-2xl font-extrabold">Bảng Xếp Hạng</h2>
+                  </div>
+                  <p className="text-sm font-medium text-white/90">
+                    Xem ai giỏi toán nhất nào! Thi đua cùng bạn bè
+                  </p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-3xl">🥇</span>
+                    <span className="rounded-full bg-white/25 px-4 py-1.5 text-sm font-bold backdrop-blur-sm">
+                      Xem ngay →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
         </div>
       </section>
+
+      {/* Login prompt */}
+      {!user && (
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mb-10"
+        >
+          <Link href="/login">
+            <div className="rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-center text-white shadow-lg transition hover:shadow-xl">
+              <p className="text-lg font-bold">
+                🔑 Đăng nhập để lưu thành tích và lên bảng xếp hạng!
+              </p>
+              <p className="mt-1 text-sm text-white/80">
+                Bấm vào đây để đăng nhập hoặc tạo tài khoản mới
+              </p>
+            </div>
+          </Link>
+        </motion.section>
+      )}
 
       {/* Features */}
       <section className="mb-8">

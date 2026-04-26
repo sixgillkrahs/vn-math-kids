@@ -16,12 +16,16 @@ import Confetti from "@/components/Confetti";
 interface ExerciseViewProps {
   exercises: GeneratedExercise[];
   grade: number;
+  authToken?: string | null;
+  studentName?: string;
   onComplete?: (score: number) => void;
 }
 
 export default function ExerciseView({
   exercises,
   grade,
+  authToken,
+  studentName,
   onComplete,
 }: ExerciseViewProps) {
   const [current, setCurrent] = useState(0);
@@ -56,12 +60,30 @@ export default function ExerciseView({
         ((correctCount + (isCorrect ? 0 : 0)) / exercises.length) * 100
       );
       onComplete?.(finalScore);
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+      fetch("/api/results", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          studentName: studentName || "Học sinh",
+          grade,
+          topic: exercises[0]?.topic || "Bài tập",
+          totalQuestions: exercises.length,
+          correctAnswers: correctCount,
+          score: finalScore,
+          answers: [],
+        }),
+      }).catch(() => {});
     } else {
       setCurrent((c) => c + 1);
       setSelected(null);
       setAnswered(false);
     }
-  }, [current, exercises.length, correctCount, isCorrect, onComplete]);
+  }, [current, exercises, correctCount, isCorrect, onComplete, authToken, studentName, grade]);
 
   const handleRestart = useCallback(() => {
     setCurrent(0);

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IResult extends Document {
   studentName: string;
+  userId?: string;
   grade: number;
   topic: string;
   totalQuestions: number;
@@ -13,7 +14,8 @@ export interface IResult extends Document {
 
 const ResultSchema = new Schema<IResult>({
   studentName: { type: String, required: true },
-  grade: { type: Number, required: true },
+  userId: { type: String, index: true },
+  grade: { type: Number, required: true, index: true },
   topic: { type: String, required: true },
   totalQuestions: { type: Number, required: true },
   correctAnswers: { type: Number, required: true },
