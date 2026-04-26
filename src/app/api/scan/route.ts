@@ -35,9 +35,20 @@ export async function POST(request: NextRequest) {
 
     const prompt = `You are a math exercise extractor for Vietnamese elementary school students (grades 1-5).
 Extract all math problems from this image and return them as a JSON array.
-Each exercise should have: question, answer, topic, explanation.
+Each exercise MUST have: question, answer, options (array of exactly 4 strings), topic, explanation.
+
+CRITICAL RULES for "options":
+- "options" must be an array of exactly 4 answer choices including the correct answer.
+- ALL options MUST have the EXACT same format and unit as the correct answer.
+  For example if the answer is "66 cm", then ALL 4 options must end with " cm" (e.g. ["66 cm", "56 cm", "76 cm", "60 cm"]).
+  If the answer is "3/4", all options must be fractions (e.g. ["3/4", "2/4", "1/4", "4/4"]).
+  If the answer is "62", all options must be plain numbers (e.g. ["62", "52", "72", "58"]).
+- Wrong options must be plausible (close in value) but clearly incorrect.
+- The correct answer must appear in the options array at a random position.
+- Do NOT mix formats (e.g. "66 cm" with "56" without unit is WRONG).
+
 Return ONLY valid JSON array, no markdown, no code fences.
-Example: [{"question": "5 + 3 = ?", "answer": "8", "topic": "Phép cộng", "explanation": "5 + 3 = 8"}]
+Example: [{"question": "70 cm - 30 cm + 26 cm = ?", "answer": "66 cm", "options": ["66 cm", "56 cm", "76 cm", "60 cm"], "topic": "Phép tính độ dài", "explanation": "70 - 30 + 26 = 66 cm"}]
 
 Extract math exercises from this image for grade ${grade || "1-5"} students in Vietnam.`;
 
@@ -60,6 +71,9 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
         try {
           const cleaned = content.replace(/```json\n?|\n?```/g, "").trim();
           exercises = JSON.parse(cleaned);
+          if (Array.isArray(exercises)) {
+            exercises = exercises.map(normalizeExercise);
+          }
         } catch {
           exercises = getSampleScannedExercises(Number(grade) || 1);
         }
@@ -101,12 +115,96 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
   }
 }
 
+function generateConsistentOptions(answer: string): string[] {
+  const unitMatch = answer.match(/^([\d.,/]+)\s*(.+)$/);
+  const unit = unitMatch ? unitMatch[2] : "";
+  const numStr = unitMatch ? unitMatch[1] : answer;
+
+  if (numStr.includes("/")) {
+    const [num, den] = numStr.split("/").map(Number);
+    if (!isNaN(num) && !isNaN(den) && den > 0) {
+      const opts = new Set<string>([answer]);
+      while (opts.size < 4) {
+        const delta = Math.floor(Math.random() * 3) + 1;
+        const sign = Math.random() > 0.5 ? 1 : -1;
+        const newNum = Math.max(0, num + delta * sign);
+        const val = `${newNum}/${den}`;
+        opts.add(unit ? `${val} ${unit}` : val);
+      }
+      return [...opts].sort(() => Math.random() - 0.5);
+    }
+  }
+
+  const num = parseFloat(numStr.replace(",", "."));
+  if (!isNaN(num)) {
+    const opts = new Set<string>([answer]);
+    const magnitude = Math.max(1, Math.floor(Math.abs(num) * 0.15) || 1);
+    while (opts.size < 4) {
+      const delta = Math.floor(Math.random() * magnitude * 2) + 1;
+      const sign = Math.random() > 0.5 ? 1 : -1;
+      const newNum = num + delta * sign;
+      const formatted = Number.isInteger(num)
+        ? String(Math.round(newNum))
+        : newNum.toFixed(numStr.includes(".") ? (numStr.split(".")[1]?.length || 1) : 1);
+      opts.add(unit ? `${formatted} ${unit}` : formatted);
+    }
+    return [...opts].sort(() => Math.random() - 0.5);
+  }
+
+  return [answer, "Không xác định", "Đáp án khác", "Không có đáp án"].sort(
+    () => Math.random() - 0.5
+  );
+}
+
+function normalizeExercise(ex: {
+  question: string;
+  answer: string;
+  options?: string[];
+  topic?: string;
+  explanation?: string;
+}) {
+  let options = ex.options;
+
+  if (!Array.isArray(options) || options.length < 2) {
+    options = generateConsistentOptions(ex.answer);
+  } else {
+    if (!options.includes(ex.answer)) {
+      options[Math.floor(Math.random() * options.length)] = ex.answer;
+    }
+
+    const unitMatch = ex.answer.match(/^[\d.,/]+\s*(.+)$/);
+    if (unitMatch) {
+      const unit = unitMatch[1];
+      options = options.map((opt) => {
+        if (opt === ex.answer) return opt;
+        const optUnit = opt.match(/^[\d.,/]+\s*(.+)$/);
+        if (!optUnit || optUnit[1] !== unit) {
+          const numPart = opt.replace(/[^\d.,/\-]/g, "").trim();
+          return numPart ? `${numPart} ${unit}` : opt;
+        }
+        return opt;
+      });
+    }
+
+    while (options.length < 4) {
+      const extra = generateConsistentOptions(ex.answer);
+      for (const e of extra) {
+        if (!options.includes(e) && options.length < 4) options.push(e);
+      }
+    }
+    if (options.length > 4) options = options.slice(0, 4);
+  }
+
+  return { ...ex, options };
+}
+
 function getSampleScannedExercises(grade: number) {
   const samples: Record<
     number,
     Array<{
       question: string;
       answer: string;
+      options: string[];
       topic: string;
       explanation: string;
     }>
@@ -115,12 +213,14 @@ function getSampleScannedExercises(grade: number) {
       {
         question: "3 + 4 = ?",
         answer: "7",
+        options: ["5", "7", "6", "8"],
         topic: "Phép cộng",
         explanation: "3 + 4 = 7",
       },
       {
         question: "8 - 5 = ?",
         answer: "3",
+        options: ["3", "4", "2", "5"],
         topic: "Phép trừ",
         explanation: "8 - 5 = 3",
       },
@@ -129,12 +229,14 @@ function getSampleScannedExercises(grade: number) {
       {
         question: "25 + 37 = ?",
         answer: "62",
+        options: ["52", "62", "72", "58"],
         topic: "Phép cộng",
         explanation: "25 + 37 = 62",
       },
       {
         question: "4 × 6 = ?",
         answer: "24",
+        options: ["20", "28", "24", "22"],
         topic: "Phép nhân",
         explanation: "4 × 6 = 24",
       },
@@ -143,12 +245,14 @@ function getSampleScannedExercises(grade: number) {
       {
         question: "7 × 8 = ?",
         answer: "56",
+        options: ["48", "56", "64", "54"],
         topic: "Phép nhân",
         explanation: "7 × 8 = 56",
       },
       {
         question: "63 ÷ 9 = ?",
         answer: "7",
+        options: ["6", "8", "7", "9"],
         topic: "Phép chia",
         explanation: "63 ÷ 9 = 7",
       },
@@ -157,12 +261,14 @@ function getSampleScannedExercises(grade: number) {
       {
         question: "45 × 6 = ?",
         answer: "270",
+        options: ["260", "280", "270", "250"],
         topic: "Phép nhân",
         explanation: "45 × 6 = 270",
       },
       {
         question: "1/4 + 2/4 = ?",
         answer: "3/4",
+        options: ["2/4", "3/4", "1/4", "4/4"],
         topic: "Phân số",
         explanation: "1/4 + 2/4 = 3/4",
       },
@@ -171,12 +277,14 @@ function getSampleScannedExercises(grade: number) {
       {
         question: "3.5 + 2.7 = ?",
         answer: "6.2",
+        options: ["5.2", "6.2", "7.2", "6.0"],
         topic: "Số thập phân",
         explanation: "3.5 + 2.7 = 6.2",
       },
       {
         question: "25% của 200 = ?",
         answer: "50",
+        options: ["40", "50", "60", "45"],
         topic: "Phần trăm",
         explanation: "25% × 200 = 50",
       },

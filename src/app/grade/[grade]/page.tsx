@@ -298,17 +298,25 @@ export default function GradePage({
 }
 
 function generateOptionsFromAnswer(answer: string): string[] {
-  const num = parseFloat(answer);
+  const unitMatch = answer.match(/^([\d.,/]+)\s*(.+)$/);
+  const unit = unitMatch ? unitMatch[2] : "";
+  const numStr = unitMatch ? unitMatch[1] : answer;
+  const num = parseFloat(numStr.replace(",", "."));
   if (!isNaN(num)) {
     const opts = new Set<string>([answer]);
+    const magnitude = Math.max(1, Math.floor(Math.abs(num) * 0.15) || 1);
     while (opts.size < 4) {
-      const delta = Math.floor(Math.random() * 5) + 1;
+      const delta = Math.floor(Math.random() * magnitude * 2) + 1;
       const sign = Math.random() > 0.5 ? 1 : -1;
-      opts.add(String(num + delta * sign));
+      const newNum = num + delta * sign;
+      const formatted = Number.isInteger(num)
+        ? String(Math.round(newNum))
+        : newNum.toFixed(numStr.includes(".") ? (numStr.split(".")[1]?.length || 1) : 1);
+      opts.add(unit ? `${formatted} ${unit}` : formatted);
     }
     return shuffleArr([...opts]);
   }
-  return shuffleArr([answer, "?", "Không xác định", "Khác"]);
+  return shuffleArr([answer, "Không xác định", "Đáp án khác", "Không có đáp án"]);
 }
 
 function shuffleArr<T>(arr: T[]): T[] {
