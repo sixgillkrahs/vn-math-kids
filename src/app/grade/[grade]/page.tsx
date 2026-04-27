@@ -334,7 +334,7 @@ export default function GradePage({
 }
 
 function generateOptionsFromAnswer(answer: string): string[] {
-  const unitMatch = answer.match(/^([\d.,/]+)\s*(.+)$/);
+  const unitMatch = answer.match(/^([\d.,/]+)\s*([a-zA-Z%°²³µ].*)$/);
   const unit = unitMatch ? unitMatch[2] : "";
   const numStr = unitMatch ? unitMatch[1] : answer;
   const num = parseFloat(numStr.replace(",", "."));
