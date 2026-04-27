@@ -100,8 +100,10 @@ function AdminGuard() {
 }
 
 function generateOptionsFromAnswer(answer: string): string[] {
-  const num = parseFloat(answer.replace(/[^0-9.-]/g, ""));
-  const unit = answer.replace(/[0-9.-]/g, "").trim();
+  const unitMatch = answer.match(/^([\d.,/]+)\s*(.+)$/);
+  const unit = unitMatch ? unitMatch[2] : "";
+  const numStr = unitMatch ? unitMatch[1] : answer;
+  const num = parseFloat(numStr.replace(",", "."));
   if (!isNaN(num)) {
     const offsets = [
       Math.max(1, Math.floor(num * 0.1)),
@@ -236,9 +238,12 @@ function AdminPageContent() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (res.ok) {
-        const copy = [...scannedExercises];
-        copy[idx] = { ...copy[idx], imageUrl: data.url };
-        setScannedExercises(copy);
+        setScannedExercises((prev) => {
+          if (!prev) return prev;
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], imageUrl: data.url };
+          return copy;
+        });
       } else {
         alert(data.error || "Upload thất bại");
       }
