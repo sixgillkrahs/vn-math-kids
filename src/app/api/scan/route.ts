@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       return Response.json(
         {
           error: "Chưa cấu hình Gemini API Key. Vui lòng thêm GEMINI_API_KEY vào environment variables.",
+          exercises: [],
         },
         { status: 200 }
       );
@@ -115,6 +116,7 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
     return Response.json(
       {
         error: errorMessage,
+        exercises: [],
       },
       { status: 200 }
     );
@@ -123,6 +125,7 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
     return Response.json(
       {
         error: "Đã xảy ra lỗi khi quét file.",
+        exercises: [],
       },
       { status: 200 }
     );
