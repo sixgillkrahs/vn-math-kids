@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return Response.json(
         {
-          error: "AI scanning is not configured. Please set GEMINI_API_KEY.",
-          exercises: getSampleScannedExercises(Number(grade) || 1),
+          error: "Chưa cấu hình Gemini API Key. Vui lòng thêm GEMINI_API_KEY vào environment variables.",
+          exercises: [],
         },
         { status: 200 }
       );
@@ -89,7 +89,12 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
         lastError = err;
         const isRetryable =
           err instanceof Error &&
-          (err.message.includes("429") || err.message.includes("404"));
+          (err.message.includes("429") ||
+            err.message.includes("404") ||
+            err.message.includes("503") ||
+            err.message.includes("500") ||
+            err.message.includes("overloaded") ||
+            err.message.includes("high demand"));
         if (isRetryable) {
           continue;
         }
@@ -99,13 +104,16 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
 
     console.error("Scan error after retries:", lastError);
     const errorMessage =
-      lastError instanceof Error && lastError.message.includes("429")
+      lastError instanceof Error &&
+      (lastError.message.includes("429") ||
+        lastError.message.includes("503") ||
+        lastError.message.includes("high demand"))
         ? "API đang bận, vui lòng thử lại sau ít phút."
         : "Không thể quét file. Vui lòng thử lại.";
     return Response.json(
       {
         error: errorMessage,
-        exercises: getSampleScannedExercises(Number(grade) || 1),
+        exercises: [],
       },
       { status: 200 }
     );
@@ -114,7 +122,7 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
     return Response.json(
       {
         error: "Đã xảy ra lỗi khi quét file.",
-        exercises: getSampleScannedExercises(1),
+        exercises: [],
       },
       { status: 200 }
     );
@@ -122,7 +130,7 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
 }
 
 function generateConsistentOptions(answer: string): string[] {
-  const unitMatch = answer.match(/^([\d.,/]+)\s*(.+)$/);
+  const unitMatch = answer.match(/^([\d.,/]+)\s*([a-zA-Z%°²³µ].*)$/);
   const unit = unitMatch ? unitMatch[2] : "";
   const numStr = unitMatch ? unitMatch[1] : answer;
 
@@ -179,12 +187,12 @@ function normalizeExercise(ex: {
       options[Math.floor(Math.random() * options.length)] = ex.answer;
     }
 
-    const unitMatch = ex.answer.match(/^[\d.,/]+\s*(.+)$/);
+    const unitMatch = ex.answer.match(/^[\d.,/]+\s*([a-zA-Z%°²³µ].*)$/);
     if (unitMatch) {
       const unit = unitMatch[1];
       options = options.map((opt) => {
         if (opt === ex.answer) return opt;
-        const optUnit = opt.match(/^[\d.,/]+\s*(.+)$/);
+        const optUnit = opt.match(/^[\d.,/]+\s*([a-zA-Z%°²³µ].*)$/);
         if (!optUnit || optUnit[1] !== unit) {
           const numPart = opt.replace(/[^\d.,/\-]/g, "").trim();
           return numPart ? `${numPart} ${unit}` : opt;
