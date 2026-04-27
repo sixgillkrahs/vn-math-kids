@@ -4,16 +4,19 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileImage, Loader2 } from "lucide-react";
 
+export interface ScannedExerciseData {
+  question: string;
+  answer: string;
+  topic: string;
+  explanation: string;
+  options?: string[];
+  difficulty?: string;
+  imageUrl?: string;
+}
+
 interface FileUploaderProps {
   grade: number;
-  onExercisesScanned: (
-    exercises: {
-      question: string;
-      answer: string;
-      topic: string;
-      explanation: string;
-    }[]
-  ) => void;
+  onExercisesScanned: (exercises: ScannedExerciseData[]) => void;
 }
 
 export default function FileUploader({

@@ -7,6 +7,7 @@ export interface IExamQuestion {
   topic: string;
   explanation?: string;
   difficulty?: "easy" | "medium" | "hard";
+  imageUrl?: string;
 }
 
 export interface IExam extends Document {
@@ -31,6 +32,7 @@ const ExamQuestionSchema = new Schema<IExamQuestion>(
       enum: ["easy", "medium", "hard"],
       default: "easy",
     },
+    imageUrl: { type: String },
   },
   { _id: false }
 );

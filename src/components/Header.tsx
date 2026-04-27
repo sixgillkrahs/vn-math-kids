@@ -49,11 +49,11 @@ export default function Header() {
           </Link>
           {user?.role === "admin" && (
             <Link
-              href="/scan"
+              href="/admin"
               className="flex items-center gap-1 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/30"
             >
               <ScanLine size={16} />
-              <span className="hidden sm:inline">Quét bài</span>
+              <span className="hidden sm:inline">Quản lý</span>
             </Link>
           )}
           <Link
