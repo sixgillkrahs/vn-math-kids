@@ -81,7 +81,10 @@ Extract math exercises from this image for grade ${grade || "1-5"} students in V
             exercises = exercises.map(normalizeExercise);
           }
         } catch {
-          exercises = getSampleScannedExercises(Number(grade) || 1);
+          return Response.json(
+            { error: "Không thể phân tích kết quả từ AI. Vui lòng thử lại." },
+            { status: 200 }
+          );
         }
 
         return Response.json({ exercises });
