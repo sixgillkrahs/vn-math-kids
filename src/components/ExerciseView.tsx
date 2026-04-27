@@ -13,6 +13,15 @@ import {
 import type { GeneratedExercise } from "@/lib/mathGenerator";
 import Confetti from "@/components/Confetti";
 
+function shuffleArray(arr: string[]): string[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 interface ExerciseViewProps {
   exercises: GeneratedExercise[];
   grade: number;
@@ -38,6 +47,10 @@ export default function ExerciseView({
   const exercise = exercises[current];
   const isCorrect = selected === exercise?.answer;
   const progress = ((current + (answered ? 1 : 0)) / exercises.length) * 100;
+
+  const [shuffledOptions, setShuffledOptions] = useState(() =>
+    shuffleArray(exercises[0]?.options || [])
+  );
 
   const handleSelect = useCallback(
     (option: string) => {
@@ -79,9 +92,11 @@ export default function ExerciseView({
         }),
       }).catch(() => {});
     } else {
-      setCurrent((c) => c + 1);
+      const nextIdx = current + 1;
+      setCurrent(nextIdx);
       setSelected(null);
       setAnswered(false);
+      setShuffledOptions(shuffleArray(exercises[nextIdx]?.options || []));
     }
   }, [current, exercises, correctCount, isCorrect, onComplete, authToken, studentName, grade]);
 
@@ -91,7 +106,8 @@ export default function ExerciseView({
     setAnswered(false);
     setCorrectCount(0);
     setFinished(false);
-  }, []);
+    setShuffledOptions(shuffleArray(exercises[0]?.options || []));
+  }, [exercises]);
 
   if (finished) {
     const score = Math.round((correctCount / exercises.length) * 100);
@@ -187,7 +203,7 @@ export default function ExerciseView({
 
           {/* Options */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {exercise.options.map((option, idx) => {
+            {shuffledOptions.map((option, idx) => {
               const isThis = selected === option;
               const isAnswer = option === exercise.answer;
               let btnClass =

@@ -34,6 +34,15 @@ interface ExamData {
   exercises: ExamQuestion[];
 }
 
+function shuffleArray(arr: string[]): string[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 type ExamState = "loading" | "ready" | "running" | "finished" | "error";
 
 export default function ExamPage({
@@ -55,6 +64,8 @@ export default function ExamPage({
   const [correctCount, setCorrectCount] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
+
   const [timeLeft, setTimeLeft] = useState(0);
   const [startTime, setStartTime] = useState(0);
   const [timeTaken, setTimeTaken] = useState(0);
@@ -70,6 +81,7 @@ export default function ExamPage({
         setExam(data.exam);
         setTimeLeft(data.exam.timeLimit * 60);
         setAnswers(new Array(data.exam.exercises.length).fill(null));
+        setShuffledOptions(shuffleArray(data.exam.exercises[0]?.options || []));
         setState("ready");
       })
       .catch((err) => {
@@ -116,17 +128,18 @@ export default function ExamPage({
 
   useEffect(() => {
     if (state !== "running") return;
+    let remaining = timeLeft;
     const timer = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timer);
-          finishExamRef.current?.();
-          return 0;
-        }
-        return t - 1;
-      });
+      remaining -= 1;
+      if (remaining <= 0) {
+        remaining = 0;
+        clearInterval(timer);
+        finishExamRef.current?.();
+      }
+      setTimeLeft(remaining);
     }, 1000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const handleStart = () => {
@@ -157,6 +170,7 @@ export default function ExamPage({
     setShowConfetti(false);
     setTimeTaken(0);
     setTimeLeft(exam.timeLimit * 60);
+    setShuffledOptions(shuffleArray(exam.exercises[0]?.options || []));
     setState("ready");
   };
 
@@ -165,9 +179,11 @@ export default function ExamPage({
     if (current + 1 >= exam.exercises.length) {
       finishExam();
     } else {
-      setCurrent((c) => c + 1);
+      const nextIdx = current + 1;
+      setCurrent(nextIdx);
       setSelected(null);
       setAnswered(false);
+      setShuffledOptions(shuffleArray(exam.exercises[nextIdx]?.options || []));
     }
   };
 
@@ -422,7 +438,7 @@ export default function ExamPage({
           </h3>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {exercise.options.map((option, idx) => {
+            {shuffledOptions.map((option, idx) => {
               const isThis = selected === option;
               const isAnswer = option === exercise.answer;
               let btnClass =
