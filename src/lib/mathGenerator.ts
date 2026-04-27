@@ -4,6 +4,7 @@ export interface GeneratedExercise {
   options: string[];
   topic: string;
   explanation: string;
+  imageUrl?: string;
 }
 
 function rand(min: number, max: number): number {

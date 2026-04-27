@@ -95,7 +95,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Link href="/scan">
+              <Link href="/admin">
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-400 to-cyan-500 p-6 text-white shadow-xl shadow-teal-200 cursor-pointer transition-shadow hover:shadow-2xl">
                   <div className="absolute -right-4 -top-4 text-8xl opacity-20">
                     🤖

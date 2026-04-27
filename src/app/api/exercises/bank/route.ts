@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         explanation?: string;
         options?: string[];
         difficulty?: string;
+        imageUrl?: string;
       }) => ({
         grade,
         question: ex.question,
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
         difficulty: validDifficulties.includes(ex.difficulty || "")
           ? ex.difficulty
           : "easy",
+        imageUrl: ex.imageUrl || "",
         source: "scanned" as const,
       })
     );
@@ -123,6 +125,7 @@ export async function GET(request: NextRequest) {
           topic: 1,
           explanation: 1,
           difficulty: 1,
+          imageUrl: 1,
         },
       },
     ]);
