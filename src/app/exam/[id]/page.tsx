@@ -24,6 +24,7 @@ interface ExamQuestion {
   options: string[];
   topic: string;
   explanation?: string;
+  imageUrl?: string;
 }
 
 interface ExamData {
@@ -433,9 +434,20 @@ export default function ExamPage({
           <div className="mb-2 inline-block rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-600">
             {exercise.topic}
           </div>
-          <h3 className="mb-6 text-2xl font-extrabold text-gray-800 sm:text-3xl">
+          <h3 className="mb-4 text-2xl font-extrabold text-gray-800 sm:text-3xl">
             {exercise.question}
           </h3>
+
+          {exercise.imageUrl && (
+            <div className="mb-4 overflow-hidden rounded-2xl border border-gray-200">
+              <img
+                src={exercise.imageUrl}
+                alt="Hình minh họa"
+                className="w-full object-contain"
+                style={{ maxHeight: 300 }}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {shuffledOptions.map((option, idx) => {

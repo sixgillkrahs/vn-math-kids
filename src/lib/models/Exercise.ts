@@ -7,6 +7,7 @@ export interface IExercise extends Document {
   options?: string[];
   answer: string;
   explanation?: string;
+  imageUrl?: string;
   difficulty: "easy" | "medium" | "hard";
   source: "generated" | "scanned";
   createdAt: Date;
@@ -19,6 +20,7 @@ const ExerciseSchema = new Schema<IExercise>({
   options: [{ type: String }],
   answer: { type: String, required: true },
   explanation: { type: String },
+  imageUrl: { type: String },
   difficulty: {
     type: String,
     enum: ["easy", "medium", "hard"],
