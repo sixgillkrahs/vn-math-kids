@@ -128,17 +128,18 @@ export default function ExamPage({
 
   useEffect(() => {
     if (state !== "running") return;
+    let remaining = timeLeft;
     const timer = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timer);
-          finishExamRef.current?.();
-          return 0;
-        }
-        return t - 1;
-      });
+      remaining -= 1;
+      if (remaining <= 0) {
+        remaining = 0;
+        clearInterval(timer);
+        finishExamRef.current?.();
+      }
+      setTimeLeft(remaining);
     }, 1000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const handleStart = () => {
